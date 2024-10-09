@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestión de Barberos - Kings Barber Shop</title>
+    <!-- Tailwind CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- SweetAlert CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Montserrat', sans-serif;
+        }
+    </style>
+</head>
+<body>
+<div class="container mx-auto my-4 px-4">
+    <!-- Navbar -->
+    <nav class="bg-gray-800 rounded mb-4">
+        <div class="container mx-auto flex justify-center">
+            <a class="text-white font-semibold text-xl py-3" href="#">Kings Barber Shop</a>
+        </div>
+    </nav>
+
+    <!-- Sección para agregar barberos y generar tickets -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <!-- Agregar Barbero -->
+        <div class="bg-white shadow rounded">
+            <div class="bg-blue-500 text-white px-4 py-2 rounded-t">
+                <h5 class="mb-0">Agregar Barbero</h5>
+            </div>
+            <div class="p-4">
+                <form id="barberForm">
+                    <div class="flex">
+                        <input type="text" id="barberName" class="flex-grow border border-gray-300 rounded-l px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Nombre del barbero" required>
+                        <button type="submit" class="bg-blue-500 text-white font-semibold px-4 py-2 rounded-r focus:outline-none hover:bg-blue-600">Agregar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Generar Ticket -->
+        <div class="bg-white shadow rounded">
+            <div class="bg-green-500 text-white px-4 py-2 rounded-t">
+                <h5 class="mb-0">Generar Ticket de Cliente</h5>
+            </div>
+            <div class="p-4">
+                <form id="ticketForm">
+                    <div class="mb-3">
+                        <input type="text" id="customerName" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Nombre del cliente" required>
+                    </div>
+                    <div class="mb-3">
+                        <select id="barberSelect" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500">
+                            <option value="esperar">Esperar Turno</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="bg-green-500 text-white font-semibold w-full py-2 rounded focus:outline-none hover:bg-green-600">Generar Ticket</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección de barberos y clientes -->
+    <div class="mb-4">
+        <h4 class="mb-3 font-semibold text-lg">Barberos y Clientes</h4>
+        <div id="barberClientsCards" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+    </div>
+
+    <!-- Sección de clientes en cola -->
+    <div class="mb-4">
+        <h4 class="mb-3 font-semibold text-lg">Clientes en Cola</h4>
+        <div class="overflow-x-auto">
+            <table class="min-w-full bg-white">
+                <thead class="bg-gray-800 text-white">
+                    <tr>
+                        <th class="py-2 px-4">#</th>
+                        <th class="py-2 px-4">Nombre del Cliente</th>
+                        <th class="py-2 px-4">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="customerQueue">
+                    <!-- Filas de clientes en cola serán generadas aquí -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Registro de clientes atendidos -->
+    <div class="mb-4">
+        <h4 class="mb-3 font-semibold text-lg">Registro de Clientes Atendidos</h4>
+        <div class="overflow-x-auto">
+            <table class="min-w-full bg-white">
+                <thead class="bg-gray-800 text-white">
+                <tr>
+                    <th class="py-2 px-4">Cliente</th>
+                    <th class="py-2 px-4">Barbero</th>
+                    <th class="py-2 px-4">Fecha</th>
+                    <th class="py-2 px-4">Hora</th>
+                </tr>
+                </thead>
+                <tbody id="attendanceLog"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Botón para cerrar el día -->
+    <div class="text-center mb-4">
+        <button id="closeDayBtn" class="bg-red-500 text-white font-semibold py-2 px-4 rounded focus:outline-none hover:bg-red-600">Cerrar Día</button>
+    </div>
+
+    <!-- Modal para editar barbero -->
+    <div class="fixed z-10 inset-0 overflow-y-auto hidden" id="editBarberModal">
+        <div class="flex items-center justify-center min-h-screen">
+            <div class="bg-white rounded shadow-lg w-1/3">
+                <div class="border-b px-4 py-2 flex justify-between items-center">
+                    <h3 class="font-semibold text-lg">Editar Barbero</h3>
+                    <button class="text-black close-modal">&times;</button>
+                </div>
+                <div class="p-4">
+                    <input type="text" id="editBarberName" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Nombre del barbero" required>
+                    <input type="hidden" id="editBarberId">
+                </div>
+                <div class="flex justify-end items-center w-full p-3">
+                    <button class="bg-gray-500 text-white px-3 py-2 rounded mr-1 close-modal">Cancelar</button>
+                    <button class="bg-blue-500 text-white px-3 py-2 rounded ml-1" id="saveBarberChanges">Guardar Cambios</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- SweetAlert JS -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<!-- Custom JS -->
+<script>
+ document.addEventListener('DOMContentLoaded', () => {
+    let barbers = JSON.parse(localStorage.getItem('barbers')) || [];
+    let customerQueue = JSON.parse(localStorage.getItem('customerQueue')) || [];
+    let attendanceLog = JSON.parse(localStorage.getItem('attendanceLog')) || [];
+
+    const barberForm = document.getElementById('barberForm');
+    const ticketForm = document.getElementById('ticketForm');
+    const barberSelect = document.getElementById('barberSelect');
+    const barberClientsCards = document.getElementById('barberClientsCards');
+    const customerQueueTable = document.getElementById('customerQueue');
+    const attendanceLogTable = document.getElementById('attendanceLog');
+    const closeDayBtn = document.getElementById('closeDayBtn');
+
+    // Función para mostrar los barberos y sus clientes
+    const displayBarberCards = () => {
+        barberClientsCards.innerHTML = '';
+        barberSelect.innerHTML = '<option value="esperar">Esperar Turno</option>';
+        barbers.forEach((barber, index) => {
+            const card = document.createElement('div');
+            card.classList.add('bg-white', 'shadow', 'rounded', 'relative', 'p-4');
+
+            let clientsHtml = '';
+            if (barber.clients && barber.clients.length > 0) {
+                clientsHtml += '<ul class="list-disc pl-5 mt-2">';
+                barber.clients.forEach((client, clientIndex) => {
+                    // Cliente en posición 0: está siendo atendido
+                    if (clientIndex === 0) {
+                        clientsHtml += `
+                            <li class="flex justify-between items-center py-1">
+                                <span>${client.name} <span class="text-xs text-gray-500">(Atendiendo)</span></span>
+                                <button class="bg-green-500 text-white text-sm px-2 py-1 rounded focus:outline-none hover:bg-green-600" onclick="completeCustomer(${index}, ${clientIndex})">
+                                    Terminar
+                                </button>
+                            </li>
+                        `;
+                    } else {
+                        // Clientes en espera (posición 1 en adelante)
+                        clientsHtml += `
+                            <li class="flex justify-between items-center py-1">
+                                <span>${client.name} <span class="text-xs text-gray-500">(En espera)</span></span>
+                                <div class="flex space-x-1">
+                                    <button class="bg-blue-500 text-white text-sm px-2 py-1 rounded focus:outline-none hover:bg-blue-600" onclick="reassignCustomer(${index}, ${clientIndex})">
+                                        Reasignar
+                                    </button>
+                                    <button class="bg-red-500 text-white text-sm px-2 py-1 rounded focus:outline-none hover:bg-red-600" onclick="removeCustomer(${index}, ${clientIndex})">
+                                        Eliminar
+                                    </button>
+                                </div>
+                            </li>
+                        `;
+                    }
+                });
+                clientsHtml += '</ul>';
+            } else {
+                clientsHtml = '<p class="text-gray-600 mt-2">No tiene clientes asignados.</p>';
+            }
+
+            // Indicador de estado
+            const statusBadge = barber.isActive
+                ? '<span class="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded">Activo</span>'
+                : '<span class="absolute top-2 right-2 bg-gray-500 text-white text-xs px-2 py-1 rounded">Inactivo</span>';
+
+            card.innerHTML = `
+                ${statusBadge}
+                <h5 class="text-lg font-semibold">${barber.name}</h5>
+                <p class="text-sm text-gray-700 mt-1"><strong>Clientes Atendidos:</strong> ${barber.totalClientesAtendidos || 0}</p>
+                ${clientsHtml}
+                <div class="mt-3 flex space-x-2">
+                    <button class="bg-yellow-500 text-white text-sm px-2 py-1 rounded focus:outline-none hover:bg-yellow-600" onclick="openEditBarberModal(${index})">Editar</button>
+                    <button class="bg-red-500 text-white text-sm px-2 py-1 rounded focus:outline-none hover:bg-red-600" onclick="deleteBarber(${index})">Eliminar</button>
+                    <button class="bg-${barber.isActive ? 'gray' : 'green'}-500 text-white text-sm px-2 py-1 rounded focus:outline-none hover:bg-${barber.isActive ? 'gray' : 'green'}-600" onclick="toggleBarberStatus(${index})">
+                        ${barber.isActive ? 'Desactivar' : 'Activar'}
+                    </button>
+                </div>
+            `;
+            barberClientsCards.appendChild(card);
+
+            // Solo agregar barberos activos al select
+            if (barber.isActive) {
+                barberSelect.innerHTML += `<option value="${index}">${barber.name}</option>`;
+            }
+        });
+    };
+
+    // Función para mostrar la cola de clientes en una tabla
+    const displayCustomerQueue = () => {
+        customerQueueTable.innerHTML = '';
+        if (customerQueue.length === 0) {
+            customerQueueTable.innerHTML = '<tr><td colspan="3" class="text-center text-gray-600 py-4">No hay clientes en cola.</td></tr>';
+        } else {
+            customerQueue.forEach((customer, index) => {
+                const tr = document.createElement('tr');
+                tr.classList.add('border-b');
+                tr.innerHTML = `
+                    <td class="py-2 px-4 text-center">${index + 1}</td>
+                    <td class="py-2 px-4">${customer.name}</td>
+                    <td class="py-2 px-4 text-center">
+                        <button class="bg-red-500 text-white text-sm px-3 py-1 rounded focus:outline-none hover:bg-red-600" onclick="removeFromQueue(${index})">
+                            Eliminar
+                        </button>
+                    </td>
+                `;
+                customerQueueTable.appendChild(tr);
+            });
+        }
+    };
+
+    // Función para mostrar el registro de asistencia
+    const displayAttendanceLog = () => {
+        attendanceLogTable.innerHTML = '';
+        if (attendanceLog.length === 0) {
+            attendanceLogTable.innerHTML = '<tr><td colspan="4" class="text-center text-gray-600 py-4">No hay registros.</td></tr>';
+        } else {
+            attendanceLog.forEach(log => {
+                const row = document.createElement('tr');
+                row.classList.add('border-b');
+                row.innerHTML = `
+                    <td class="py-2 px-4">${log.cliente}</td>
+                    <td class="py-2 px-4">${log.barbero}</td>
+                    <td class="py-2 px-4">${log.fecha}</td>
+                    <td class="py-2 px-4">${log.hora}</td>
+                `;
+                attendanceLogTable.appendChild(row);
+            });
+        }
+    };
+
+    // Función para agregar un barbero
+    barberForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const barberName = document.getElementById('barberName').value.trim();
+        if (barberName) {
+            const newBarber = {
+                name: barberName,
+                clients: [],
+                totalClientesAtendidos: 0,
+                isActive: true // Barbero activo por defecto
+            };
+            barbers.push(newBarber);
+            localStorage.setItem('barbers', JSON.stringify(barbers));
+            displayBarberCards();
+            barberForm.reset();
+            Swal.fire({
+                icon: 'success',
+                title: 'Barbero Agregado',
+                text: `Barbero ${barberName} agregado exitosamente.`,
+                showConfirmButton: false,
+                timer: 2000
+            });
+        }
+    });
+
+    // Función para generar un ticket de cliente
+    ticketForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const customerName = document.getElementById('customerName').value.trim();
+        const selectedBarber = barberSelect.value;
+
+        if (customerName) {
+            const customer = { name: customerName };
+            if (selectedBarber === 'esperar') {
+                customerQueue.push(customer);
+                localStorage.setItem('customerQueue', JSON.stringify(customerQueue));
+                displayCustomerQueue();
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Cliente en Cola',
+                    text: `Cliente ${customerName} agregado a la cola.`,
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+                assignCustomersToFreeBarbers();
+            } else {
+                assignCustomerToBarber(customer, parseInt(selectedBarber));
+            }
+            ticketForm.reset();
+        }
+    });
+
+    // Función para asignar clientes en cola a barberos libres
+    const assignCustomersToFreeBarbers = () => {
+        barbers.forEach((barber, index) => {
+            while (barber.isActive && barber.clients.length === 0 && customerQueue.length > 0) {
+                const nextCustomer = customerQueue.shift();
+                localStorage.setItem('customerQueue', JSON.stringify(customerQueue));
+                assignCustomerToBarber(nextCustomer, index);
+            }
+        });
+        displayCustomerQueue();
+    };
+
+    // Función para asignar un cliente a un barbero
+    const assignCustomerToBarber = (customer, barberIndex) => {
+        if (barbers[barberIndex].isActive) {
+            barbers[barberIndex].clients.push(customer);
+            localStorage.setItem('barbers', JSON.stringify(barbers));
+            displayBarberCards();
+            displayCustomerQueue();
+            Swal.fire({
+                icon: 'success',
+                title: 'Cliente Asignado',
+                text: `Cliente ${customer.name} asignado a ${barbers[barberIndex].name}.`,
+                showConfirmButton: false,
+                timer: 2000
+            });
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Barbero Inactivo',
+                text: `El barbero seleccionado está inactivo.`,
+                showConfirmButton: false,
+                timer: 2000
+            });
+        }
+    };
+
+    // Función para completar la atención de un cliente
+    window.completeCustomer = (barberIndex, clientIndex) => {
+        const barber = barbers[barberIndex];
+        const finishedCustomer = barber.clients.splice(clientIndex, 1)[0];
+        const date = new Date();
+        const logEntry = {
+            cliente: finishedCustomer.name,
+            barbero: barber.name,
+            fecha: date.toLocaleDateString(),
+            hora: date.toLocaleTimeString()
+        };
+        attendanceLog.push(logEntry);
+        barber.totalClientesAtendidos += 1;
+        localStorage.setItem('barbers', JSON.stringify(barbers));
+        localStorage.setItem('attendanceLog', JSON.stringify(attendanceLog));
+        Swal.fire({
+            icon: 'success',
+            title: 'Atención Completada',
+            text: `Cliente ${finishedCustomer.name} atendido por ${barber.name}.`,
+            showConfirmButton: false,
+            timer: 2000
+        });
+        displayAttendanceLog();
+        displayBarberCards();
+        assignCustomersToFreeBarbers();
+    };
+
+    // Función para eliminar un cliente en espera
+    window.removeCustomer = (barberIndex, clientIndex) => {
+        const barber = barbers[barberIndex];
+        const removedCustomer = barber.clients.splice(clientIndex, 1)[0];
+        localStorage.setItem('barbers', JSON.stringify(barbers));
+        displayBarberCards();
+        Swal.fire({
+            icon: 'info',
+            title: 'Cliente Eliminado',
+            text: `Cliente ${removedCustomer.name} eliminado de la lista de ${barber.name}.`,
+            showConfirmButton: false,
+            timer: 2000
+        });
+    };
+
+    // Función para reasignar un cliente en espera
+    window.reassignCustomer = (barberIndex, clientIndex) => {
+        const barber = barbers[barberIndex];
+        const customer = barber.clients.splice(clientIndex, 1)[0];
+        localStorage.setItem('barbers', JSON.stringify(barbers));
+        // Agregar el cliente de vuelta a la cola
+        customerQueue.push(customer);
+        localStorage.setItem('customerQueue', JSON.stringify(customerQueue));
+        displayBarberCards();
+        displayCustomerQueue();
+        assignCustomersToFreeBarbers();
+        Swal.fire({
+            icon: 'info',
+            title: 'Cliente Reasignado',
+            text: `Cliente ${customer.name} ha sido devuelto a la cola.`,
+            showConfirmButton: false,
+            timer: 2000
+        });
+    };
+
+    // Función para eliminar un cliente de la cola
+    window.removeFromQueue = (queueIndex) => {
+        const removedCustomer = customerQueue.splice(queueIndex, 1)[0];
+        localStorage.setItem('customerQueue', JSON.stringify(customerQueue));
+        displayCustomerQueue();
+        Swal.fire({
+            icon: 'info',
+            title: 'Cliente Eliminado',
+            text: `Cliente ${removedCustomer.name} eliminado de la cola.`,
+            showConfirmButton: false,
+            timer: 2000
+        });
+    };
+
+    // Función para abrir el modal de edición de barbero
+    window.openEditBarberModal = (index) => {
+        const barber = barbers[index];
+        document.getElementById('editBarberName').value = barber.name;
+        document.getElementById('editBarberId').value = index;
+        document.getElementById('editBarberModal').classList.remove('hidden');
+    };
+
+    // Función para cerrar el modal
+    document.querySelectorAll('.close-modal').forEach(element => {
+        element.addEventListener('click', () => {
+            document.getElementById('editBarberModal').classList.add('hidden');
+        });
+    });
+
+    // Función para guardar los cambios del barbero
+    document.getElementById('saveBarberChanges').addEventListener('click', () => {
+        const index = document.getElementById('editBarberId').value;
+        const barberName = document.getElementById('editBarberName').value.trim();
+        if (barberName) {
+            barbers[index].name = barberName;
+            localStorage.setItem('barbers', JSON.stringify(barbers));
+            displayBarberCards();
+            document.getElementById('editBarberModal').classList.add('hidden');
+            Swal.fire({
+                icon: 'success',
+                title: 'Barbero Actualizado',
+                text: `Barbero actualizado a ${barberName}.`,
+                showConfirmButton: false,
+                timer: 2000
+            });
+        }
+    });
+
+    // Función para eliminar un barbero
+    window.deleteBarber = (index) => {
+        Swal.fire({
+            title: 'Eliminar Barbero',
+            text: `¿Deseas eliminar al barbero ${barbers[index].name}?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                barbers.splice(index, 1);
+                localStorage.setItem('barbers', JSON.stringify(barbers));
+                displayBarberCards();
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Barbero Eliminado',
+                    text: `Barbero eliminado exitosamente.`,
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+            }
+        });
+    };
+
+    // Función para activar/desactivar un barbero
+    window.toggleBarberStatus = (index) => {
+        barbers[index].isActive = !barbers[index].isActive;
+        localStorage.setItem('barbers', JSON.stringify(barbers));
+        displayBarberCards();
+        Swal.fire({
+            icon: 'info',
+            title: 'Estado Actualizado',
+            text: `El barbero ahora está ${barbers[index].isActive ? 'activo' : 'inactivo'}.`,
+            showConfirmButton: false,
+            timer: 2000
+        });
+        assignCustomersToFreeBarbers();
+    };
+
+    // Función para cerrar el día
+    closeDayBtn.addEventListener('click', () => {
+        Swal.fire({
+            title: 'Cerrar Día',
+            text: '¿Estás seguro de cerrar el día? Se reiniciarán los contadores.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, cerrar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                barbers.forEach(barber => {
+                    barber.totalClientesAtendidos = 0;
+                    barber.clients = [];
+                });
+                customerQueue = [];
+                attendanceLog = [];
+                localStorage.setItem('barbers', JSON.stringify(barbers));
+                localStorage.setItem('customerQueue', JSON.stringify(customerQueue));
+                localStorage.setItem('attendanceLog', JSON.stringify(attendanceLog));
+                displayBarberCards();
+                displayCustomerQueue();
+                displayAttendanceLog();
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Día Cerrado',
+                    text: 'El día ha sido cerrado exitosamente.',
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+            }
+        });
+    });
+
+    // Inicializar la interfaz
+    displayBarberCards();
+    displayCustomerQueue();
+    displayAttendanceLog();
+});
+
+</script>
+</body>
+</html>
