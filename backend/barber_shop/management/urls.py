@@ -16,4 +16,6 @@ urlpatterns = [
     path('get_barbers_and_clients/', views.get_barbers_and_clients, name='get_barbers_and_clients'),
     path('get_clients_in_queue/', views.get_clients_in_queue, name='get_clients_in_queue'),
     path('get_attendance_log/', views.get_attendance_log, name='get_attendance_log'),
+    path('client/<int:client_id>/', views.get_client_by_id, name='get_client_by_id'),
+    path('barber/<int:barber_id>/', views.get_barber_by_id, name='get_barber_by_id'),
 ]
