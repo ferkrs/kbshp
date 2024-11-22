@@ -5,7 +5,11 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from .models import BarberProfile, Client, AttendanceLog, User
-from .serializers import *
+from .serializers import ( BarberProfileSerializer,
+                           ClientSerializer, 
+                           AttendanceLogAllSerializer, 
+
+                         )
 from django.shortcuts import get_object_or_404
 import random
 from rest_framework.schemas import get_schema_view
@@ -266,25 +270,47 @@ def get_attendance_log(request):
 
     return Response(serializer.data, status=200)
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_barber_by_id(request, barber_id):
+    """
+    Devuelve la información de un barbero activo por su ID.
+
+    Args:
+        request: La solicitud HTTP.
+        barber_id (int): ID del barbero a consultar.
+
+    Returns:
+        Response: Objeto de respuesta HTTP con datos serializados del barbero.
+
+    Respuestas HTTP:
+        200 OK: Devuelve los datos del barbero.
+        404 Not Found: Si el barbero no existe o no está activo.
+        401 Unauthorized: Si el usuario no está autenticado.
+    """
+    barber = get_object_or_404(BarberProfile, id=barber_id, is_active=True)
+    serializer = BarberProfileSerializer(barber)
+    return Response(serializer.data, status=200)
+
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_client_by_id(request, client_id):
     """
     Devuelve la información de un cliente por su ID.
+
+    Args:
+        request: La solicitud HTTP.
+        client_id (int): ID del cliente a consultar.
+
+    Returns:
+        Response: Objeto de respuesta HTTP con datos serializados del cliente.
+
+    Respuestas HTTP:
+        200 OK: Devuelve los datos del cliente.
+        404 Not Found: Si el cliente no existe.
+        401 Unauthorized: Si el usuario no está autenticado.
     """
     client = get_object_or_404(Client, id=client_id)
     serializer = ClientSerializer(client)
     return Response(serializer.data, status=200)
-
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def get_barber_by_id(request, barber_id):
-    """
-    Devuelve la información de un barbero por su ID.
-    """
-    barber = get_object_or_404(BarberProfile, id=barber_id)
-    serializer = BarberProfileSerializer(barber)
-    return Response(serializer.data, status=200)
-
