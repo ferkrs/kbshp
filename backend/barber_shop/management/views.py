@@ -265,3 +265,26 @@ def get_attendance_log(request):
     serializer = AttendanceLogAllSerializer(clients_history, many=True)
 
     return Response(serializer.data, status=200)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_client_by_id(request, client_id):
+    """
+    Devuelve la información de un cliente por su ID.
+    """
+    client = get_object_or_404(Client, id=client_id)
+    serializer = ClientSerializer(client)
+    return Response(serializer.data, status=200)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_barber_by_id(request, barber_id):
+    """
+    Devuelve la información de un barbero por su ID.
+    """
+    barber = get_object_or_404(BarberProfile, id=barber_id)
+    serializer = BarberProfileSerializer(barber)
+    return Response(serializer.data, status=200)
+
